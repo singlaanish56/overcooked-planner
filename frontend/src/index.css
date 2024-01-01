@@ -1,18 +1,48 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin:0;
+}
+
 .navbar{
     background-color: lightblue;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 32px;
+    padding: 0 16px;
     overflow: hidden;
 }
 
+.navbar-name{
+    font-size: 32px;
+}
+
+.navbar ul{
+    list-style: none;
+}
+
 .navbar a{
-    float: left;
-    color: #f2f2f2;
-    text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
-    font-size: 17px;
+ color: inherit;
+ text-decoration: none;
+ text-align: center;
 }
 
 .navbar a:hover{
-    background-color: #ddd;
-    color:black;
+    background-color: #ddd ;
+    color: black;
+}
+
+.container{
+    text-align: center;
+    align-items: center;
+}
+
+.add-recipe-form{
+    background-color: aliceblue;
+    max-width: 500px;
+   
 }
