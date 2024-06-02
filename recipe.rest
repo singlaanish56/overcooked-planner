@@ -1,0 +1,63 @@
+POST http://localhost:8080/recipes HTTP/1.1
+content-type: application/json
+
+{
+        "id": "3",
+        "name": "Chicken Gravy",
+        "people": 2,
+        "indgredients": [
+            {
+                "name": "Chicken",
+                "quantity": 250,
+                "unit": "g"
+            },
+            {
+                "name": "Wheat Parantha",
+                "quantity": 4,
+                "unit": "pc"
+            },
+            {
+                "name": "Tomato",
+                "quantity": 5,
+                "unit": "pc"
+            }
+        ]
+}
+
+
+GET http://localhost:8080/recipes HTTP/1.1
+
+GET http://localhost:8080/recipes/1 HTTP/1.1
+
+DELETE http://localhost:8080/recipes/2 HTTP/1.1
+
+POST http://localhost:8080/recipes/3 HTTP/1.1
+content-type: application/json
+
+{
+        "id": "3",
+        "name": "Chicken Gravy",
+        "people": 2,
+        "indgredients": [
+            {
+                "name": "Chicken",
+                "quantity": 250,
+                "unit": "g"
+            },
+            {
+                "name": "Wheat Parantha",
+                "quantity": 4,
+                "unit": "pc"
+            },
+            {
+                "name": "Tomato",
+                "quantity": 5,
+                "unit": "pc"
+            },
+            {
+                "name": "Onion",
+                "quantity": 1,
+                "unit": "pc"
+            }
+        ]
+}
