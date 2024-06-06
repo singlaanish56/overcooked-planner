@@ -1,0 +1,66 @@
+POST http://localhost:8080/mealDay HTTP/1.1
+content-type: application/json
+
+{
+        "id": "4",
+        "day": "Wednesday",
+        "date" : "14-06-24",
+        "meals": [
+            {
+                "id":"1",
+                "name": "Breakfast",
+                "time": "Morning",
+                "recipes": ["1"]
+            },
+            {
+                "id":"2",
+                "name": "Lunch",
+                "time": "Afternoon",
+                "recipes": ["2"]
+            },
+            {
+                "id":"3",
+                "name": "Dinner",
+                "time": "Night",
+                "recipes": ["3"]
+            }
+        ]
+}
+
+
+GET http://localhost:8080/mealDay HTTP/1.1
+
+GET http://localhost:8080/mealDay/4 HTTP/1.1
+
+
+
+POST http://localhost:8080/mealDay/4 HTTP/1.1
+content-type: application/json
+
+{
+        "id": "4",
+        "day": "Thursday",
+        "date" : "14-06-24",
+        "meals": [
+            {
+                "id":"1",
+                "name": "Breakfast",
+                "time": "Morning",
+                "recipes": ["1"]
+            },
+            {
+                "id":"2",
+                "name": "Lunch",
+                "time": "Afternoon",
+                "recipes": ["2"]
+            },
+            {
+                "id":"3",
+                "name": "Dinner",
+                "time": "Night",
+                "recipes": ["3"]
+            }
+        ]
+}
+
+DELETE http://localhost:8080/mealDay/4 HTTP/1.1

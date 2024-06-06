@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/singlaanish56/overcooked-planner/recipe"
+	
+	"github.com/singlaanish56/overcooked-planner/week"
 )
 
 func main() {
 
 	fmt.Println("Starting the backend")
-	recipe.StartRecipe()
+	//recipe.StartRecipe()
+	week.StartWeek()
 }
