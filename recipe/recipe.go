@@ -79,7 +79,6 @@ func updateTheRecipeById(c *gin.Context){
 		if a.ID == id{
 			var newRecipe Recipe
 			if err:=c.BindJSON(&newRecipe); err!=nil{
-				fmt.Println(err)
 				c.IndentedJSON(http.StatusBadRequest, gin.H{"message":"recipe could not be updated"})
 				return 
 			}

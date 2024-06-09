@@ -1,0 +1,50 @@
+GET http://localhost:8080/lists HTTP/1.1
+
+GET http://localhost:8080/lists/1 HTTP/1.1
+
+GET http://localhost:8080/lists/name/Chicken HTTP/1.1
+
+POST http://localhost:8080/lists/2 HTTP/1.1
+content-type: application/json
+
+{
+  "id": "1",
+  "indgredientList": [
+    {
+      "id": "1",
+      "indgredient": {
+        "name": "Chicken",
+        "quantity": 900,
+        "unit": "g"
+      },
+      "isAvailable": false
+    },
+    {
+      "id": "2",
+      "indgredient": {
+        "name": "Wheat Parantha",
+        "quantity": 12,
+        "unit": "pc"
+      },
+      "isAvailable": false
+    },
+    {
+      "id": "3",
+      "indgredient": {
+        "name": "Dal",
+        "quantity": 300,
+        "unit": "g"
+      },
+      "isAvailable": false
+    }
+  ]
+}
+
+POST http://localhost:8080/lists HTTP/1.1
+content-type: application/json
+
+{
+    "name": "Wheat Parantha",
+    "quantity": 15,
+    "unit": "pc"    
+}
