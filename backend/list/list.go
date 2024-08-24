@@ -2,7 +2,7 @@ package list
 
 import (
 	"fmt"
-	"github.com/singlaanish56/overcooked-planner/recipe"
+	"github.com/singlaanish56/overcooked-planner/backend/recipe"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -94,9 +94,8 @@ func UpdateItemByName(c *gin.Context){
 }
 
 
-func StartListBackend() {
+func StartList(router *gin.Engine) {
 	fmt.Println("Start the List backend")
-	router := gin.Default()
 
 	router.GET("/lists",GetAllList)
 	router.GET("/lists/:id", GetListItemById)
@@ -104,5 +103,5 @@ func StartListBackend() {
 	router.POST("/lists/:id", UpdateListById)
 	router.POST("/lists", UpdateItemByName)
 	
-	router.Run("localhost:8080")
+	
 }

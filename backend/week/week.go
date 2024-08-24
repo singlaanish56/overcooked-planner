@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/singlaanish56/overcooked-planner/recipe"
+	"github.com/singlaanish56/overcooked-planner/backend/recipe"
 )
 
 type Meal struct{
@@ -139,13 +139,13 @@ func deleteMealById(c * gin.Context){
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message":"meal not found"})
 }
 
-func StartWeek() {
+func StartWeek(router *gin.Engine) {
 	fmt.Println("Starting the week backend")
-	router:=gin.Default()
+	
 	router.POST("/mealDay", createMealDay)
 	router.POST("/mealDay/:id", updateMealDay)
 	router.GET("/mealDay",getAllMealDays)
 	router.GET("/mealDay/:id", getMealDayById)
 	router.DELETE("/mealDay/:id", deleteMealById)
-	router.Run("localhost:8080")
+
 }
