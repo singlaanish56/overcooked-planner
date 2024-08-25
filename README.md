@@ -7,7 +7,10 @@ I could also add recipes and the ingredients required amd adding the meals for w
 from the existing inventory.
 
 ##### Next
+read and use the cte or cascade delete or stored procedure for the delete recipe operation, deleting with the foreign key contraints.
 specify the no of people for the recipe while adding it in the week selection
+exact match / partial match while searching for the recipe
+
 
 
 ##### Long Term
