@@ -13,6 +13,7 @@ type Meal struct{
 	ID string `json:"id"`
 	Name string `json:"name"`
 	Time string `json:"time"`
+	RecipesID []string `json:"recipesIds"`
 	Recipes [] recipe.Recipe `json:"recipes"`
 }
 
@@ -23,56 +24,64 @@ type MealDay struct{
 	TotalMeals []Meal `json:"meals"`
 }
 
-//seed for the test
-// var recipes = []recipe.Recipe{
-// 	{ID:"1",Name: "Chicken Roll",People:2,Indgredients: []recipe.Indgredient{
-// 		{Name:"Chicken",Quantity: 200,Unit: "g"},
-// 		{Name:"Wheat Parantha",Quantity: 4,Unit:"pc"},
-// 		{Name:"Marinate",Quantity: 30,Unit: "g"},
-// 	}},
-// 	{ID:"2",Name: "Khichdi",People:2,Indgredients: []recipe.Indgredient{
-// 		{Name:"Rice",Quantity: 100,Unit: "g"},
-// 		{Name:"Dal",Quantity: 100,Unit:"g"},
-// 	}},
-// 	{ID:"3",Name: "Half Egg",People:1,Indgredients: []recipe.Indgredient{
-// 		{Name:"Egg",Quantity: 2,Unit: "pc"},
-// 		{Name:"Bread",Quantity: 2,Unit:"pc"},
-// 	}},
-// 	}
-
-
-// var meals = []Meal{
-// {ID:"1",Name:"Breakfast",Time:"Morning",RecipesID: []string{"1"},Recipes: []recipe.Recipe{recipes[0]}},
-// {ID:"2",Name:"Lunch",Time:"Afternoon",RecipesID: []string{"2"},Recipes: []recipe.Recipe{recipes[1]}},
-// {ID:"3",Name:"Dinner",Time:"Night",RecipesID: []string{"3"},Recipes: []recipe.Recipe{recipes[2]}},
-// }
-
-// var days = []MealDay{
-// {ID:"1",Day:"Monday",Date:"11-06-24",TotalMeals: meals},
-// {ID:"2",Day:"Tuesday",Date:"12-06-24",TotalMeals: meals},
-// {ID:"3",Day:"Wednesday",Date:"13-06-24",TotalMeals: meals},
-// }
-
 func createMealDay(c *gin.Context){
-	// var newDay MealDay
+	var newDay MealDay
 
-	// if err:=c.BindJSON(&newDay); err!=nil{
-	// 	return 
-	// }
+	if err:=c.BindJSON(&newDay); err!=nil{
+		return 
+	}
 
-	// for _, a := range newDay.TotalMeals{
-	// 	for _,b :=range a.RecipesID{
-	// 		for _,c := range recipes{
-	// 			if(b==c.ID){
-	// 				a.Recipes = append(a.Recipes, c)
-	// 			}
-	// 		}
-			
-	// 	}
-	// }
+	tx, err := database.DB.Begin()
+	if err != nil{
+		c.IndentedJSON(http.StatusInternalServerError,gin.H{"error":"cannot start a transaction"})
+		return 
+	}
 
-	// days = append(days, newDay)
-	// c.IndentedJSON(http.StatusCreated, newDay)
+	defer tx.Rollback()
+
+	queryInsertMealDay := `insert into mealDay (day, date) values ($1, $2) returning id`
+	var mealDayId string
+
+	err1 := tx.QueryRow(queryInsertMealDay, newDay.Day, newDay.Date).Scan(&mealDayId)
+	if err1 != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"failed to insert the mealDay"})
+	}
+
+	newDay.ID = mealDayId
+
+	queryInsertMeal := `insert into meal (name, time) values ($1, $2) returning id`
+	queryInsertRecipeID := `insert into meal_recipe (recipe_id, meal_id) values ($1, $2)`
+	queryInsertMealId := `insert into mealDay_meal (meal_id, mealDay_id) values ($1, $2)`
+
+	for _, meal := range newDay.TotalMeals{
+		var mealId string
+		err1 = tx.QueryRow(queryInsertMeal, meal.Name, meal.Time).Scan(&mealId)
+		if err1 != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"error with creating the meal"})
+			return 
+		}
+
+		meal.ID = mealId
+		for _, recipeID := range meal.RecipesID{
+			_, err1 = tx.Exec(queryInsertRecipeID, recipeID, mealId)
+			if err1 != nil{
+				c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Unable to map the recipe to the meal"})
+				return
+			}
+		}
+
+		_, err1 = tx.Exec(queryInsertMealId, mealId, mealDayId)
+		if err1 != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Couldnt not link the meal to the mealday"})
+			return
+		}
+	}
+
+	if err1 = tx.Commit(); err1 != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"error during committing the txn"})
+		return 
+	}
+	c.IndentedJSON(http.StatusCreated, newDay)
 }
 
 func getAllMealDays(c *gin.Context){
@@ -142,6 +151,7 @@ func getMealDayById(c *gin.Context){
 		meal, exists := mealMap[m.ID]
 		if !exists{
 			meal = &m
+			meal.RecipesID = make([]string, 0)
 			meal.Recipes = make([]recipe.Recipe, 0)
 			mealMap[m.ID] =  meal
 			mealDay.TotalMeals = append(mealDay.TotalMeals, *meal)
@@ -152,6 +162,7 @@ func getMealDayById(c *gin.Context){
 			rec = &r
 			rec.Indgredients = make([]recipe.Indgredient, 0)
 			recipeMap[r.ID] = rec
+			meal.RecipesID = append(meal.RecipesID, r.ID)
 			meal.Recipes = append(meal.Recipes, *rec)
 		}
 
@@ -167,6 +178,7 @@ func getMealDayById(c *gin.Context){
 			meal.Recipes[recipeIndex].Indgredients = append(meal.Recipes[recipeIndex].Indgredients, i)
 		}else{
 			rec.Indgredients = append(rec.Indgredients, i)
+			meal.RecipesID = append(meal.RecipesID, rec.ID)
 			meal.Recipes = append(meal.Recipes, *rec)
 		}
 		
