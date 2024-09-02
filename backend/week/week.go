@@ -196,6 +196,11 @@ func getMealDayById(c *gin.Context){
 		return
 	}
 
+	if mealDay == nil{
+		c.IndentedJSON(http.StatusNotFound, gin.H{"error":"No Recipe found"})
+		return 
+	}
+
 	c.IndentedJSON(http.StatusFound, mealDay)
 }
 
@@ -235,14 +240,76 @@ func updateMealDay(c *gin.Context){
 }
 
 func deleteMealById(c * gin.Context){
-	// id:=c.Param("id")
-	// for i,a := range days{
-	// 	if a.ID == id{
-	// 		days = append(days[:i],days[i+1:]...)
-	// 		return 
-	// 	}
-	// }
-	// c.IndentedJSON(http.StatusNotFound, gin.H{"message":"meal not found"})
+	id:=c.Param("id")
+
+	tx, err  := database.DB.Begin()
+	if err != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Couldnt start the transaction"})
+		return 
+	}
+	defer tx.Rollback()
+
+	queryGetMeals := `select mdm.meal_id from mealDay_meal mdm where mdm.mealDay_id = $1`
+	meals := make([]string,0)
+
+	rows, err := tx.Query(queryGetMeals, id)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Error getting the meals for it"})
+		return
+	}
+
+	for rows.Next(){
+		var mealId string
+		err1 := rows.Scan(&mealId)
+		if err1 != nil{
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Error getting the meals"})
+			return			
+		}
+
+		meals = append(meals, mealId)
+	}
+
+	queryDeleteRecipeId := ` delete from meal_recipe where meal_id=$1`
+	for _, mealId := range meals{
+		_, err := tx.Exec(queryDeleteRecipeId, mealId)
+		if err != nil{
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Error deleting the associated recipes"})
+			return					
+		}
+	}
+	
+	//query delete the map for mealDay / meal
+	queryDeleteTheMealId := `delete from mealDay_meal where mealDay_id=$1`
+	_, err1 := tx.Exec(queryDeleteTheMealId, id)
+	if err1 != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Error deleting the associated meals"})
+		return					
+	}
+
+	//query to delete the meal
+	queryDeleteTheMeal := `delete from meal where id=$1`
+	for _, mealID := range meals{
+		_, err := tx.Exec(queryDeleteTheMeal, mealID)
+		if err != nil{
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Error deleting the meals"})
+			return					
+		}
+
+	}
+	
+	queryDeleteTheMealDay := `delete from mealDay where id=$1`
+	_, err2 := tx.Exec(queryDeleteTheMealDay, id)
+	if err2 != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error": err2})
+		return					
+	} 
+
+	if err = tx.Commit(); err !=nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Couldnt Commit the transaction"})
+		return 				
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{"message":"meal Day deleted"})
 }
 
 func StartWeek(router *gin.Engine) {
