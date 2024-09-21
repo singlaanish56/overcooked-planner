@@ -8,6 +8,7 @@ from the existing inventory.
 
 ##### Next
 map in the structs
+issue withe the id returned in the get query its is not converted
 reduce the structs by using just the id?
 read and use the cte or cascade delete or stored procedure for the delete recipe operation, deleting with the foreign key contraints.
 specify the no of people for the recipe while adding it in the week selection

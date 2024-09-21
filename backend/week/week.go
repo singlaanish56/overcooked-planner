@@ -205,38 +205,134 @@ func getMealDayById(c *gin.Context){
 }
 
 func updateMealDay(c *gin.Context){
-	// id:=c.Param("id")
+	id:=c.Param("id")
 	
-	// for i,a := range days{
-	// 	if a.ID == id{
-	// 		var newMeal MealDay
-	// 		if err:=c.BindJSON(&newMeal); err!=nil{
-	// 			fmt.Println(err)
-	// 			c.IndentedJSON(http.StatusBadRequest, gin.H{"message":"meal could not be updated"})
-	// 			return 
-	// 		}
+	var updateMealDay MealDay
+
+	if err:=c.BindJSON(&updateMealDay); err!=nil{
+		return 
+	}
 
 
-	// 		for _, a := range newMeal.TotalMeals{
-	// 			for _,b :=range a.RecipesID{
-	// 				for _,c := range recipes{
-	// 					if(b==c.ID){
-	// 						a.Recipes = append(a.Recipes, c)
-	// 					}
-	// 				}
-					
-	// 			}
-	// 		}
+	tx, err := database.DB.Begin();
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Couldnt start the txn"})
+		return
+	}
 
-	// 		days[i]=newMeal
+	defer tx.Rollback()
 
-	// 		c.IndentedJSON(http.StatusCreated, gin.H{"message":"meal updated"})
-	// 		return 
-	// 	}
-	// }
+	
+	//retrieve the mealDay and get all the corresponding mealIds in the mapping table
+	queryIds := "Select mdm.meal_id from mealday_meal mdm where mdm.mealday_id = $1"
+	rows, err := tx.Query(queryIds, id)
+	if err != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Error while selecting"})
+		return 
+	}
+	defer rows.Close()
+	
+	mealIDsInDB := make(map[string]int, 0)
+	for rows.Next(){
+		var mealId string
+		err := rows.Scan(&mealId)
+		if err != nil{
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"error scanning the row to get the meal IDs"})
+			return
+		}
+		mealIDsInDB[mealId] =1
+	}
 
-	// c.IndentedJSON(http.StatusNotFound, gin.H{"message":"recipe not found"})
+	queryDeleteTheMealRecipe := "delete from meal_recipe where meal_id=$1"
+	queryUpdateTheMeal := "update meal set name=$1, time=$2 where id=$3"
+	queryAddTheRecipeId := "insert into meal_recipe (meal_id, recipe_id) values ($1, $2)"
+	queryInsertNewMeal := "insert into meal (name, time) values ($1,$2) returning id"
+	queryInsertTheMealDayMap := "insert into mealday_meal (mealday_id, meal_id) values($1, $2)"
+	for _, meal := range updateMealDay.TotalMeals{
+		_, ok := mealIDsInDB[meal.ID]
+		if ok {
+			_, err := tx.Exec(queryDeleteTheMealRecipe, meal.ID)
+			if err != nil{
+				c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"error while deleting the recipe row"})
+				return
+			}
+			_, err = tx.Exec(queryUpdateTheMeal, meal.Name, meal.Time, meal.ID)
+			if err != nil{
+				c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":err})
+				return				
+			}
 
+			for _, recipeId := range meal.RecipesID{
+				_, err = tx.Exec(queryAddTheRecipeId, meal.ID, recipeId)
+				if err != nil{
+					c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"error while updating the recipe map"})
+					return
+				}
+			}
+			
+			delete(mealIDsInDB, meal.ID)
+		}else{
+			var newmealId string
+			err := tx.QueryRow(queryInsertNewMeal, meal.Name, meal.Time).Scan(&newmealId)
+			if err != nil{
+				c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"error while inserting the new meal"})
+				return
+			}
+
+			for _, recipeId := range meal.RecipesID{
+				_, err = tx.Exec(queryAddTheRecipeId, newmealId, recipeId)
+				if err != nil{
+					c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"error while updating the recipe map"})
+					return
+				}
+			}
+
+			_, err = tx.Exec(queryInsertTheMealDayMap, id, newmealId)
+			if err !=  nil{
+				c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"while updating the mealDay map"})
+				return
+			}
+
+			meal.ID = newmealId
+		}
+	}
+
+	queryDeleteRecipeId := ` delete from meal_recipe where meal_id=$1`
+	queryDeleteTheMealId := `delete from mealday_meal where meal_id=$1`
+	queryDeleteTheMeal := `delete from meal where id=$1`
+	for mealid, _ := range mealIDsInDB{
+			
+		_, err := tx.Exec(queryDeleteRecipeId, mealid)
+		if err != nil{
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Error deleting the associated recipes"})
+			return					
+		}
+
+		//query delete the map for mealDay / meal
+
+		_, err1 := tx.Exec(queryDeleteTheMealId, mealid)
+		if err1 != nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"Error deleting the associated meals"})
+		return					
+		}
+
+		//query to delete the meal
+
+
+		_, err = tx.Exec(queryDeleteTheMeal, mealid)
+		if err != nil{
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":err})
+			return					
+		
+	}
+}
+
+	if err:=tx.Commit(); err!=nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"error":"error while committing the transaction"})
+		return 
+	}
+
+	c.IndentedJSON(http.StatusAccepted, updateMealDay)
 }
 
 func deleteMealById(c * gin.Context){
