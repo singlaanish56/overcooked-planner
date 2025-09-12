@@ -6,9 +6,12 @@ package database
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/joho/godotenv"
 )
 
 type DBTX interface {
@@ -18,6 +21,7 @@ type DBTX interface {
 }
 
 func New(db DBTX) *Queries {
+
 	return &Queries{db: db}
 }
 
@@ -29,4 +33,25 @@ func (q *Queries) WithTx(tx pgx.Tx) *Queries {
 	return &Queries{
 		db: tx,
 	}
+}
+
+func ConnectionDb() *pgx.Conn{
+
+	conn, err := pgx.Connect(context.Background(), getDbConnectionUrl())
+	if err !=nil{
+		fmt.Fprintf(os.Stderr, "Unable to connect to the database: %v\n", err)
+		os.Exit(1)
+	}
+	
+	return conn
+}
+
+func getDbConnectionUrl() string{
+	if err := godotenv.Load(); err != nil{
+		fmt.Println("Coudlnt load the env variables")
+		os.Exit(1)
+	}
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", os.Getenv("user"), os.Getenv("password"), os.Getenv("host"), os.Getenv("port"), os.Getenv("db_name"))
+	fmt.Println(connStr)
+	return connStr
 }
