@@ -7,8 +7,6 @@ package database
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createProduct = `-- name: CreateProduct :one
@@ -21,14 +19,14 @@ RETURNING id, name, company, subtype, weight, unit, carbs, protein, fiber, fats
 `
 
 type CreateProductParams struct {
-	Name    string
-	Company pgtype.Text
-	Subtype pgtype.Text
-	Weight  pgtype.Float4
-	Unit    pgtype.Text
+	Name    string   `json:"name"`
+	Company *string  `json:"company"`
+	Subtype *string  `json:"subtype"`
+	Weight  *float32 `json:"weight"`
+	Unit    *string  `json:"unit"`
 }
 
-func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error) {
+func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (*Product, error) {
 	row := q.db.QueryRow(ctx, createProduct,
 		arg.Name,
 		arg.Company,
@@ -49,20 +47,20 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		&i.Fiber,
 		&i.Fats,
 	)
-	return i, err
+	return &i, err
 }
 
 const getAll = `-- name: GetAll :many
 SELECT id, name, company, subtype, weight, unit, carbs, protein, fiber, fats FROM PRODUCT
 `
 
-func (q *Queries) GetAll(ctx context.Context) ([]Product, error) {
+func (q *Queries) GetAll(ctx context.Context) ([]*Product, error) {
 	rows, err := q.db.Query(ctx, getAll)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Product
+	var items []*Product
 	for rows.Next() {
 		var i Product
 		if err := rows.Scan(
@@ -79,7 +77,7 @@ func (q *Queries) GetAll(ctx context.Context) ([]Product, error) {
 		); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, &i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -92,7 +90,7 @@ SELECT id, name, company, subtype, weight, unit, carbs, protein, fiber, fats FRO
 WHERE name=$1 LIMIT 2
 `
 
-func (q *Queries) GetProduct(ctx context.Context, name string) (Product, error) {
+func (q *Queries) GetProduct(ctx context.Context, name string) (*Product, error) {
 	row := q.db.QueryRow(ctx, getProduct, name)
 	var i Product
 	err := row.Scan(
@@ -107,7 +105,7 @@ func (q *Queries) GetProduct(ctx context.Context, name string) (Product, error) 
 		&i.Fiber,
 		&i.Fats,
 	)
-	return i, err
+	return &i, err
 }
 
 const updateProduct = `-- name: UpdateProduct :exec
@@ -115,9 +113,9 @@ UPDATE PRODUCT set carbs=$1, protein=$2 where id=$3 RETURNING id, name, company,
 `
 
 type UpdateProductParams struct {
-	Carbs   pgtype.Float4
-	Protein pgtype.Float4
-	ID      int64
+	Carbs   *float32 `json:"carbs"`
+	Protein *float32 `json:"protein"`
+	ID      int64    `json:"id"`
 }
 
 func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) error {

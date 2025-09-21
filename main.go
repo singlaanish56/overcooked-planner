@@ -3,36 +3,39 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgtype"
+	"os"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 	"github.com/singlaanish56/overcooked-planner/api"
 	"github.com/singlaanish56/overcooked-planner/database"
 )
 
+func getDbConnectionUrl() string{
+	if err := godotenv.Load(); err != nil{
+		fmt.Println("Coudlnt load the env variables")
+		os.Exit(1)
+	}
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", os.Getenv("user"), os.Getenv("password"), os.Getenv("host"), os.Getenv("port"), os.Getenv("db_name"))
+	fmt.Println(connStr)
+	return connStr
+}
 
 func main(){
 	router := gin.Default()
 
-	conn := database.ConnectionDb()
+	conn, err := pgx.Connect(context.Background(), getDbConnectionUrl())
+	if err !=nil{
+		fmt.Fprintf(os.Stderr, "Unable to connect to the database: %v\n", err)
+		os.Exit(1)
+	}
 
 	defer conn.Close(context.Background())
 
 	queries := database.New(conn)
 
-	insertedProduct, err := queries.CreateProduct(context.Background(), database.CreateProductParams{Name: "lactose free milk", Company: pgtype.Text{String:"amul"}, Subtype: pgtype.Text{String: "consumable"}, Weight: pgtype.Float4{Float32: 250}, Unit: pgtype.Text{String:"ml"}})
-	if err !=nil{
-		fmt.Sprintf("Couldn't do the database transaction %s", err)
-	}
-	log.Println(insertedProduct)
-	fetchedProduct, err := queries.GetProduct(context.Background(), insertedProduct.Name)
-	if err !=nil{
-		fmt.Sprintf("Couldn't do the database transaction 2 %s", err)
-	}
-	
-	log.Println(fetchedProduct)
-	api.RegisterProductRoutes(router)
+	api.RegisterProductRoutes(router, queries)
 
 	router.Run("localhost:8080")
 }

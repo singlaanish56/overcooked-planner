@@ -4,19 +4,15 @@
 
 package database
 
-import (
-	"github.com/jackc/pgx/v5/pgtype"
-)
-
 type Product struct {
-	ID      int64
-	Name    string
-	Company pgtype.Text
-	Subtype pgtype.Text
-	Weight  pgtype.Float4
-	Unit    pgtype.Text
-	Carbs   pgtype.Float4
-	Protein pgtype.Float4
-	Fiber   pgtype.Float4
-	Fats    pgtype.Float4
+	ID      int64    `json:"id"`
+	Name    string   `json:"name"`
+	Company *string  `json:"company"`
+	Subtype *string  `json:"subtype"`
+	Weight  *float32 `json:"weight"`
+	Unit    *string  `json:"unit"`
+	Carbs   *float32 `json:"carbs"`
+	Protein *float32 `json:"protein"`
+	Fiber   *float32 `json:"fiber"`
+	Fats    *float32 `json:"fats"`
 }
