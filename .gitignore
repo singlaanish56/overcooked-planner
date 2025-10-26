@@ -1,3 +1,5 @@
 *.sql
 sqlc.yaml
 .env
+nextTasks.txt
+curl_commands.txt

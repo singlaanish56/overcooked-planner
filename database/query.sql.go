@@ -109,16 +109,34 @@ func (q *Queries) GetProduct(ctx context.Context, name string) (*Product, error)
 }
 
 const updateProduct = `-- name: UpdateProduct :exec
-UPDATE PRODUCT set carbs=$1, protein=$2 where id=$3 RETURNING id, name, company, subtype, weight, unit, carbs, protein, fiber, fats
+UPDATE PRODUCT set name=$1, company=$2, subtype=$3, weight=$4, unit=$5, carbs=$6, protein=$7, fiber=$8, fats=$9 where id=$10 RETURNING id, name, company, subtype, weight, unit, carbs, protein, fiber, fats
 `
 
 type UpdateProductParams struct {
+	Name    string   `json:"name"`
+	Company *string  `json:"company"`
+	Subtype *string  `json:"subtype"`
+	Weight  *float32 `json:"weight"`
+	Unit    *string  `json:"unit"`
 	Carbs   *float32 `json:"carbs"`
 	Protein *float32 `json:"protein"`
+	Fiber   *float32 `json:"fiber"`
+	Fats    *float32 `json:"fats"`
 	ID      int64    `json:"id"`
 }
 
 func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) error {
-	_, err := q.db.Exec(ctx, updateProduct, arg.Carbs, arg.Protein, arg.ID)
+	_, err := q.db.Exec(ctx, updateProduct,
+		arg.Name,
+		arg.Company,
+		arg.Subtype,
+		arg.Weight,
+		arg.Unit,
+		arg.Carbs,
+		arg.Protein,
+		arg.Fiber,
+		arg.Fats,
+		arg.ID,
+	)
 	return err
 }
